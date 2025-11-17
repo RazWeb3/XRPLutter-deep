@@ -136,7 +136,6 @@ class _WalletConnectorDemoState extends State<WalletConnectorDemo> {
   late final TokenService _tokenService = TokenService(client: _xrplClient);
   late final EscrowService _escrowService = EscrowService(client: _xrplClient);
   late final BatchService _batchService = BatchService(client: _xrplClient);
-  late final PaymentService _paymentService = PaymentService(client: _xrplClient);
   late final EscrowPreflightClient _preflightClient = EscrowPreflightClient(client: _xrplClient);
   // IOUネットワーク事前検証入力
   final TextEditingController _issuerCtrl = TextEditingController(text: 'rISSUER_EXAMPLE');
@@ -431,6 +430,8 @@ class _WalletConnectorDemoState extends State<WalletConnectorDemo> {
 
   @override
   void dispose() {
+    _uiBatchTimer?.cancel();
+    _uiBatchTimer = null;
     _progressSub?.cancel();
     _wcProxyController.dispose();
     _xamanProxyController.dispose();
@@ -941,6 +942,9 @@ class _WalletConnectorDemoState extends State<WalletConnectorDemo> {
                       const SizedBox(height: 6),
                       TextField(
                         controller: _jwtController,
+                        obscureText: true,
+                        enableSuggestions: false,
+                        autocorrect: false,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           hintText: '例: dev-secret',
@@ -1340,6 +1344,9 @@ class _WalletConnectorDemoState extends State<WalletConnectorDemo> {
       child: ListView.builder(
         itemCount: filtered.length,
         itemExtent: 56,
+        addAutomaticKeepAlives: false,
+        addRepaintBoundaries: true,
+        cacheExtent: 0,
         itemBuilder: (context, index) {
           final e = filtered[index];
           final ts = _dateFmt.format(e.timestamp.toLocal());
@@ -1570,14 +1577,14 @@ class _WalletConnectorDemoState extends State<WalletConnectorDemo> {
       if (successes.length > 3) successes = successes.sublist(0, 3);
     }
 
-    Map<String, dynamic> _goodPay(int drops) => {
+    Map<String, dynamic> goodPay(int drops) => {
           'TransactionType': 'Payment',
           'Account': acct,
           'Destination': acct,
           'Amount': '$drops',
           'Fee': '0',
         };
-    Map<String, dynamic> _badPay(int drops) => {
+    Map<String, dynamic> badPay(int drops) => {
           'TransactionType': 'Payment',
           'Account': acct,
           'Destination': 'rrrrrrrrrrrrrrrrrrrrrhoLvTp',
@@ -1586,9 +1593,9 @@ class _WalletConnectorDemoState extends State<WalletConnectorDemo> {
         };
 
     final inner = <Map<String, dynamic>>[
-      successes.elementAt(0) ? _goodPay(1) : _badPay(1),
-      successes.length >= 2 && successes[1] ? _goodPay(2) : _badPay(2),
-      successes.length >= 3 && successes[2] ? _goodPay(3) : _badPay(3),
+      successes.elementAt(0) ? goodPay(1) : badPay(1),
+      successes.length >= 2 && successes[1] ? goodPay(2) : badPay(2),
+      successes.length >= 3 && successes[2] ? goodPay(3) : badPay(3),
     ];
 
     final batchTx = _batchService.buildBatchTxJson(
@@ -1679,6 +1686,7 @@ class _WalletConnectorDemoState extends State<WalletConnectorDemo> {
       lines.add('[IOU Preflight] ${r.ok ? 'OK' : 'Issues'}');
       lines.addAll(r.issues.map((e) => '- $e'));
       final text = lines.join('\n');
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (c) => AlertDialog(
@@ -1693,6 +1701,7 @@ class _WalletConnectorDemoState extends State<WalletConnectorDemo> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (c) => AlertDialog(

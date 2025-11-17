@@ -9,7 +9,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:xrplutter_sdk/xrplutter.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:async';
 import 'dart:convert';
 
@@ -44,7 +43,6 @@ class _HackathonHomeState extends State<HackathonHome> {
   late final EscrowPreflightClient _preflightClient = EscrowPreflightClient(client: _client);
   WalletConnector _connector = WalletConnector();
 
-  WalletProvider? _provider;
   String? _sessionAddress;
   String? _resultHash;
   String? _lastError;
@@ -133,7 +131,7 @@ class _HackathonHomeState extends State<HackathonHome> {
       final info = await _connector.getAccountInfo();
       _sessionAddress = info.address;
     } catch (_) {}
-    setState(() => _provider = p);
+    setState(() {});
   }
 
   String _compressedPreview() {
@@ -222,11 +220,13 @@ class _HackathonHomeState extends State<HackathonHome> {
         requiredAmount: amount,
       );
       final lines = <String>['[IOU Preflight] ${r.ok ? 'OK' : 'Issues'}', ...r.issues.map((e) => '- $e')];
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (c) => AlertDialog(title: const Text('IOU Preflight'), content: SelectableText(lines.join('\n')), actions: [TextButton(onPressed: () => Navigator.of(c).pop(), child: const Text('Close'))]),
       );
     } catch (e) {
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (c) => AlertDialog(title: const Text('IOU Preflight error'), content: SelectableText('$e'), actions: [TextButton(onPressed: () => Navigator.of(c).pop(), child: const Text('Close'))]),
@@ -277,6 +277,7 @@ class _HackathonHomeState extends State<HackathonHome> {
         'Applied: ${applied.map((b) => b ? '✔' : '✖').toList()}',
         if (_resultHash != null) 'Result hash: $_resultHash',
       ];
+      if (!mounted) return;
       showDialog(context: context, builder: (c) => AlertDialog(title: const Text('Batch Summary'), content: SelectableText(lines.join('\n')), actions: [TextButton(onPressed: () => Navigator.of(c).pop(), child: const Text('Close'))]));
     } catch (e) {
       setState(() => _lastError = '$e');
@@ -382,7 +383,7 @@ class _HackathonHomeState extends State<HackathonHome> {
       const SizedBox(height: 8),
       TextField(controller: _xamanProxyController, decoration: const InputDecoration(labelText: 'Xaman Proxy Base URL', hintText: 'https://<your-vercel-app>/xumm/v1/', border: OutlineInputBorder())),
       const SizedBox(height: 8),
-      TextField(controller: _jwtController, decoration: const InputDecoration(labelText: 'JWT Bearer Token', hintText: '例: dev-secret で署名したJWT', border: OutlineInputBorder())),
+      TextField(controller: _jwtController, obscureText: true, enableSuggestions: false, autocorrect: false, decoration: const InputDecoration(labelText: 'JWT Bearer Token', hintText: '例: dev-secret で署名したJWT', border: OutlineInputBorder())),
     ])));
 
     final batchCard = Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -415,6 +416,9 @@ class _HackathonHomeState extends State<HackathonHome> {
         decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
         child: ListView.builder(
           itemCount: _events.length,
+          itemExtent: 56,
+          addAutomaticKeepAlives: false,
+          cacheExtent: 0,
           itemBuilder: (context, i) {
             final e = _events[i];
             final ts = _dateFmt.format(e.timestamp.toLocal());

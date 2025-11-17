@@ -11,6 +11,7 @@ import 'xrpl_client.dart';
 class TokenService {
   TokenService({XRPLClient? client}) : _client = client ?? XRPLClient();
   final XRPLClient _client;
+  XRPLClient get client => _client;
 
   Map<String, dynamic>? _lastIssuancePreview;
   Map<String, dynamic>? get lastIssuancePreview => _lastIssuancePreview;

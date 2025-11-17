@@ -3,9 +3,9 @@
 作成日: 2025/11/17
 -->
 
-# XRPLutter — Tokenization & Atomic Operations Toolkit
+# XRPLutter Deep Track
 
-XRPLutter は、XRPL 上でのトークナイゼーション（XLS-33 MPT/XLS-89メタデータ）と、複数操作の原子的実行（Batch）をシンプルな体験で実現するためのツールキットです。非カストディアル運用に必要なウォレット連携と安全設計（事前検証）を、開発者・運用者にとって扱いやすい構成で提供します。
+XRPLutter Deep Track版は、Flutter/Dart環境で動作するXRPLトークナイゼーション/運用ツールキットです。XLS-89準拠の圧縮メタデータ＋MPTokens v1（発行フラグ対応）、Escrow（時間条件ロック）、Batch（複数操作の原子的実行／モード比較）、NFT（XLS-20）を提供し、Mainnet/Testnet/Devnetで安全に検証・運用できるよう設計しています。
 
 ## このリポジトリが提供する価値
 - 規格準拠のトークナイゼーション:

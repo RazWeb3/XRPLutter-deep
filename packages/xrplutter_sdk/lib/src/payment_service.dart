@@ -10,6 +10,7 @@ import 'xrpl_client.dart';
 class PaymentService {
   PaymentService({XRPLClient? client}) : _client = client ?? XRPLClient();
   final XRPLClient _client;
+  XRPLClient get client => _client;
 
   Map<String, dynamic>? _lastPaymentPreview;
   Map<String, dynamic>? get lastPaymentPreview => _lastPaymentPreview;

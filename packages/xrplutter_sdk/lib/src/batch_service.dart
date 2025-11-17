@@ -10,6 +10,7 @@ import 'xrpl_client.dart';
 class BatchService {
   BatchService({XRPLClient? client}) : _client = client ?? XRPLClient();
   final XRPLClient _client;
+  XRPLClient get client => _client;
 
   // Flags（モード）
   static const int tfAllOrNothing = 0x00010000;

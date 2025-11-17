@@ -10,6 +10,7 @@ import 'xrpl_client.dart';
 class EscrowService {
   EscrowService({XRPLClient? client}) : _client = client ?? XRPLClient();
   final XRPLClient _client;
+  XRPLClient get client => _client;
 
   Map<String, dynamic>? _lastCreatePreview;
   Map<String, dynamic>? _lastFinishPreview;
