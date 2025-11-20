@@ -131,6 +131,7 @@ class _WalletConnectorDemoState extends State<WalletConnectorDemo> {
     timeout: const Duration(seconds: 12),
     maxRetries: 3,
     retryBaseDelayMs: 300,
+    enforceTls: true,
   );
   // サービス群（MPT/Escrow/Batch）
   late final TokenService _tokenService = TokenService(client: _xrplClient);
@@ -321,6 +322,8 @@ class _WalletConnectorDemoState extends State<WalletConnectorDemo> {
         walletConnectProxyBaseUrl: wcBase,
         xamanProxyBaseUrl: xamanBase,
         jwtBearerToken: jwtText.isNotEmpty ? jwtText : null,
+        disallowPrivateProxyHosts: true,
+        logObservedKeys: false,
       ),
       client: _xrplClient,
     );
@@ -1346,7 +1349,7 @@ class _WalletConnectorDemoState extends State<WalletConnectorDemo> {
         itemExtent: 56,
         addAutomaticKeepAlives: false,
         addRepaintBoundaries: true,
-        cacheExtent: 0,
+        cacheExtent: 200,
         itemBuilder: (context, index) {
           final e = filtered[index];
           final ts = _dateFmt.format(e.timestamp.toLocal());

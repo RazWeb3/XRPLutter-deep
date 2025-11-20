@@ -5,6 +5,8 @@
 // 更新履歴:
 // 2025/11/17 13:20 新規作成: MPT発行/圧縮メタデータ可視化、Escrow、Batch比較、IOU事前検証を統合した簡易UIを実装。
 // 理由: ハッカソン評価に適した「一目で理解・操作できる」体験を提供するため。
+// 2025/11/20 変更: XRPLClientでTLSを強制し、Configで私有ホスト拒否/観測キー無効を既定化。ログListViewの先読みを200に調整。
+// 理由: セキュアな既定運用とUXパフォーマンスの微改善のため。
 // -------------------------------------------------------
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -36,7 +38,7 @@ class HackathonHome extends StatefulWidget {
 
 class _HackathonHomeState extends State<HackathonHome> {
   final DateFormat _dateFmt = DateFormat('HH:mm:ss');
-  final XRPLClient _client = XRPLClient(timeout: const Duration(seconds: 12), maxRetries: 3, retryBaseDelayMs: 300);
+  final XRPLClient _client = XRPLClient(timeout: const Duration(seconds: 12), maxRetries: 3, retryBaseDelayMs: 300, enforceTls: true);
   late final TokenService _tokenService = TokenService(client: _client);
   late final EscrowService _escrowService = EscrowService(client: _client);
   late final BatchService _batchService = BatchService(client: _client);
@@ -115,6 +117,8 @@ class _HackathonHomeState extends State<HackathonHome> {
         jwtBearerToken: _jwtController.text.trim().isNotEmpty ? _jwtController.text.trim() : null,
         httpTimeout: const Duration(seconds: 10),
         signingTimeout: const Duration(seconds: 90),
+        disallowPrivateProxyHosts: true,
+        logObservedKeys: false,
       ),
       client: _client,
     );
@@ -418,7 +422,7 @@ class _HackathonHomeState extends State<HackathonHome> {
           itemCount: _events.length,
           itemExtent: 56,
           addAutomaticKeepAlives: false,
-          cacheExtent: 0,
+          cacheExtent: 200,
           itemBuilder: (context, i) {
             final e = _events[i];
             final ts = _dateFmt.format(e.timestamp.toLocal());

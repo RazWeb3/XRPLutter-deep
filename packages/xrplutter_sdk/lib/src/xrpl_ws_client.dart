@@ -5,6 +5,10 @@
 // 更新履歴:
 // 2025/11/16 10:27 変更: pingIntervalと受信サイズ上限、サニタイズ済みエラーイベントを追加。
 // 理由: 接続安定性とDoS耐性の向上。
+// 2025/11/20 変更: 本番向けTLS強制フラグ(enforceTls)を追加し、wsを拒否可能に
+// 理由: 誤設定による平文通信を防ぐため
+// 2025/11/20 変更: 購読の重複排除（Setキー化）を導入
+// 理由: 再接続時の多重送信による負荷・重複イベントを防止
 // -------------------------------------------------------
 
 import 'dart:async';
@@ -12,11 +16,15 @@ import 'dart:convert';
 import 'dart:io';
 
 class XRPLWebSocketClient {
-  XRPLWebSocketClient({String? endpoint}) : _endpoint = endpoint ?? 'wss://s.altnet.rippletest.net:51233';
+  XRPLWebSocketClient({String? endpoint, bool enforceTls = false})
+      : _endpoint = endpoint ?? 'wss://s.altnet.rippletest.net:51233',
+        _enforceTls = enforceTls;
 
   final String _endpoint;
+  final bool _enforceTls;
   WebSocket? _socket;
   final StreamController<Map<String, dynamic>> _events = StreamController.broadcast();
+  final Set<String> _subscriptionKeys = <String>{};
   final List<Map<String, dynamic>> _subscriptions = [];
   int _reconnectAttempt = 0;
 
@@ -27,6 +35,9 @@ class XRPLWebSocketClient {
     final uri = Uri.parse(_endpoint);
     if (uri.scheme != 'ws' && uri.scheme != 'wss') {
       throw ArgumentError('XRPL WS endpoint must use ws/wss scheme: ' + _endpoint);
+    }
+    if (_enforceTls && uri.scheme != 'wss') {
+      throw ArgumentError('TLS is required for XRPL WS endpoint (wss only): ' + _endpoint);
     }
     _socket = await WebSocket.connect(_endpoint);
     _socket!.pingInterval = const Duration(seconds: 30);
@@ -60,9 +71,11 @@ class XRPLWebSocketClient {
     if (_socket == null) {
       await connect();
     }
-    _subscriptions.add(request);
-    final body = jsonEncode(request);
-    _socket!.add(body);
+    final key = jsonEncode(request);
+    if (_subscriptionKeys.add(key)) {
+      _subscriptions.add(request);
+      _socket!.add(key);
+    }
   }
 
   Future<void> subscribeTransactions({List<String>? accounts}) {

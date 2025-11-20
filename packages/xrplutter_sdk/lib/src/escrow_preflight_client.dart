@@ -3,6 +3,8 @@
 // 作成日: 2025/11/17
 //
 // 更新履歴:
+// 2025/11/20 変更: account_lines参照を並列化し待機時間を短縮
+// 理由: 逐次RPCによるレイテンシを削減するため
 // -------------------------------------------------------
 
 import 'xrpl_client.dart';
@@ -50,9 +52,13 @@ class EscrowPreflightClient {
       issues.add('Issuer has GlobalFreeze enabled.');
     }
 
-    // source trustline
-    final srcLines = await _call(
-        'account_lines', {'account': sourceAccount, 'peer': issuerAccount});
+    // source/destination trustlines（並列取得）
+    final lines = await Future.wait([
+      _call('account_lines', {'account': sourceAccount, 'peer': issuerAccount}),
+      _call('account_lines', {'account': destinationAccount, 'peer': issuerAccount}),
+    ]);
+    final srcLines = lines[0];
+    final dstLines = lines[1];
     final srcList = (srcLines['result']?['lines'] as List?) ?? const [];
     final srcLine = srcList.cast<Map>().firstWhere(
           (e) => (e['currency']?.toString() ?? '') == currency,
@@ -86,9 +92,6 @@ class EscrowPreflightClient {
       issues.add('Insufficient source balance: $srcBalance < $reqAmt.');
     }
 
-    // destination trustline (must exist or be creatable by destination)
-    final dstLines = await _call('account_lines',
-        {'account': destinationAccount, 'peer': issuerAccount});
     final dstList = (dstLines['result']?['lines'] as List?) ?? const [];
     final dstLine = dstList.cast<Map>().firstWhere(
           (e) => (e['currency']?.toString() ?? '') == currency,

@@ -6,6 +6,8 @@
 // 理由: 入力検証不足による不要な外部呼び出し・診断困難の防止。
 // 2025/11/17 13:50 変更: 環境変数の別名（XAMAN_API_KEY/XAMAN_API_SECRET）を受け入れ。
 // 理由: XUMM→Xaman名称移行に伴う設定名の揺れに対応し、導入ミスを防止するため。
+// 2025/11/20 変更: 本番時に外部APIエラー詳細(body)の返却を抑制
+// 理由: 情報露出低減のため（ログ側へ移行想定）
 // -------------------------------------------------------
 
 const { handleCorsPreflight, allowCors, rateLimit, verifyJwt, sendJson } = require('../../../../_utils/common');
@@ -37,9 +39,10 @@ module.exports = async (req, res) => {
     },
   });
   if (r.status !== 200) {
-    const body = await r.text();
+    const reveal = (process.env.REVEAL_ERROR_DETAIL || '').toLowerCase() === 'true';
+    const body = reveal ? await r.text() : undefined;
     res.statusCode = r.status;
-    return sendJson(res, { error: 'xumm status failed', status: r.status, body });
+    return sendJson(res, { error: 'xumm status failed', status: r.status, ...(reveal && body ? { body } : {}) });
   }
   const json = await r.json();
   const meta = json.meta || {};

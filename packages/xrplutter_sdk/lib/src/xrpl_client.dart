@@ -15,6 +15,10 @@
 // 理由: SSRF耐性の強化。
 // 2025/11/16 10:24 変更: autofillの並列化と短期TTLキャッシュを導入。awaitTransactionにバックオフ＋not_found継続処理を追加。
 // 理由: レイテンシ低減と安定性向上。
+// 2025/11/20 変更: 本番向けTLS強制フラグ(enforceTls)を追加し、httpを拒否可能に
+// 理由: 誤設定による平文通信を防ぐため
+// 2025/11/20 変更: 172.16–31のプライベートレンジ判定を数値化して網羅化
+// 理由: SSRF耐性の精度向上
 // -------------------------------------------------------
 
 import 'dart:convert';
@@ -28,17 +32,20 @@ class XRPLClient {
     Duration? timeout,
     int? maxRetries,
     int? retryBaseDelayMs,
+    bool enforceTls = false,
   })  : _timeout = timeout ?? const Duration(seconds: 10),
         _maxRetries = maxRetries ?? 2,
         _retryBaseDelayMs = retryBaseDelayMs ?? 300,
         _client = http.Client(),
-        _endpointUri = _validateEndpointUri(endpoint ?? 'https://s.altnet.rippletest.net:51234');
+        _enforceTls = enforceTls,
+        _endpointUri = _validateEndpointUri(endpoint ?? 'https://s.altnet.rippletest.net:51234', enforceTls: enforceTls);
 
   final Duration _timeout;
   final int _maxRetries;
   final int _retryBaseDelayMs;
   final http.Client _client;
   final Uri _endpointUri;
+  final bool _enforceTls;
   String? _cachedFeeDropsMedian; DateTime? _feeCachedAt;
   int? _cachedLedgerIndex; DateTime? _ledgerCachedAt;
 
@@ -92,18 +99,33 @@ class XRPLClient {
     return Duration(milliseconds: ms);
   }
 
-  static Uri _validateEndpointUri(String endpoint) {
+  static Uri _validateEndpointUri(String endpoint, {bool enforceTls = false}) {
     final uri = Uri.parse(endpoint);
     final s = uri.scheme.toLowerCase();
     if (s != 'http' && s != 'https') {
       throw ArgumentError('XRPL endpoint must use http/https scheme: ' + endpoint);
     }
+    if (enforceTls && s != 'https') {
+      throw ArgumentError('TLS is required for XRPL endpoint (https only): ' + endpoint);
+    }
     final host = uri.host.toLowerCase();
     // localhost/loopbackはテスト用途を考慮して許可
-    if (host.startsWith('10.') || host.startsWith('192.168.') || host.startsWith('172.16.') || host.startsWith('172.17.') || host.startsWith('172.18.') || host.startsWith('172.19.') || host.startsWith('172.2') || host.startsWith('169.254.')) {
+    if (_isPrivateOrLinkLocal(host)) {
       throw ArgumentError('Disallowed private/link-local address: ' + endpoint);
     }
     return uri;
+  }
+
+  static bool _isPrivateOrLinkLocal(String host) {
+    if (host.startsWith('10.') || host.startsWith('192.168.') || host.startsWith('169.254.')) return true;
+    if (host.startsWith('172.')) {
+      final parts = host.split('.');
+      if (parts.length >= 2) {
+        final second = int.tryParse(parts[1]) ?? -1;
+        if (second >= 16 && second <= 31) return true;
+      }
+    }
+    return false;
   }
 
   Future<String> _getFeeMedian() async {

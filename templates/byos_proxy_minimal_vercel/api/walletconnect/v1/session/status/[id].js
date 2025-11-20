@@ -4,15 +4,18 @@
 // 更新履歴:
 // 2025/11/13 15:25 追記: idの形式検証（UUID v4）を追加し、不正入力を拒否。
 // 理由: 入力検証不足によるストレージ走査や将来的な外部連携の誤呼出しを防止するため。
+// 2025/11/20 変更: レート制限を適用してDoS耐性を強化
+// 理由: 集中アクセスによる負荷増大・コスト増の抑制のため
 // -------------------------------------------------------
 
-const { handleCorsPreflight, allowCors, verifyJwt, sendJson } = require('../../../../_utils/common');
+const { handleCorsPreflight, allowCors, verifyJwt, rateLimit, sendJson } = require('../../../../_utils/common');
 const { getStore } = require('../../../../_utils/store');
 
 module.exports = async (req, res) => {
   allowCors(req.headers.origin, res);
   if (handleCorsPreflight(req, res)) return;
   if (!verifyJwt(req, res)) return;
+  if (!(await rateLimit(req, res))) return;
 
   const id = req.query.id;
   const uuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

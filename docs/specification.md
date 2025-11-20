@@ -61,6 +61,16 @@
 
 # XRPLutter NFT Kit SDK 仕様書
 
+## セキュリティ・運用方針（2025-11-20更新）
+- JWT検証を強化: 許可アルゴリズム/issuer/audienceを明示（既定: HS256、`JWT_ISSUER`/`JWT_AUDIENCE`設定推奨）。短寿命`exp`（最大TTLの上限検証）と`clockTolerance`を採用。
+- レート制限: Upstash Redisの原子的カウンタ（`INCR`+`EX`）で固定窓を実装し、1リクエスト1往復に最適化。
+- TLS強制フラグ: `XRPLClient(enforceTls: true)`/`XRPLWebSocketClient(enforceTls: true)`で本番時は`https/wss`のみ許可。
+- プライベート/リンクローカル判定: `10.x/192.168.x/169.254.x/172.16–31.x`を数値判定で網羅（SSRF耐性強化）。
+- 外部APIエラー詳細: 本番では詳細`body`の返却を抑制し、`REVEAL_ERROR_DETAIL=true`時のみ返却（既定は非公開）。
+- WS購読重複排除: 購読リクエストをキー化して再接続後の多重送信を防止。
+- IOUプレフライト: `account_lines`（source/destination）を並列化し待機時間を短縮。
+- UIチューニング: イベントログの`ListView.cacheExtent`を200へ調整。`WalletConnectorConfig`で`disallowPrivateProxyHosts=true`と`logObservedKeys=false`を既定化（デモ）。
+
 本仕様書は、Flutter向け「XRPLutter NFT Kit SDK」の最新の技術設計を示します。用語や設計は一般公開を前提としており、広く再利用可能なコンポーネントとして提供します。
 
 ## 1. アーキテクチャ概要
