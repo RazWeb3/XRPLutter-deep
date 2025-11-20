@@ -19,6 +19,8 @@
 // 理由: 誤設定による平文通信を防ぐため
 // 2025/11/20 変更: 172.16–31のプライベートレンジ判定を数値化して網羅化
 // 理由: SSRF耐性の精度向上
+// 2025/11/20 変更: 未使用フィールド_enforceTlsを削除（検証はコンストラクタで完了）
+// 理由: Linter警告の解消と簡潔化
 // -------------------------------------------------------
 
 import 'dart:convert';
@@ -37,7 +39,6 @@ class XRPLClient {
         _maxRetries = maxRetries ?? 2,
         _retryBaseDelayMs = retryBaseDelayMs ?? 300,
         _client = http.Client(),
-        _enforceTls = enforceTls,
         _endpointUri = _validateEndpointUri(endpoint ?? 'https://s.altnet.rippletest.net:51234', enforceTls: enforceTls);
 
   final Duration _timeout;
@@ -45,7 +46,6 @@ class XRPLClient {
   final int _retryBaseDelayMs;
   final http.Client _client;
   final Uri _endpointUri;
-  final bool _enforceTls;
   String? _cachedFeeDropsMedian; DateTime? _feeCachedAt;
   int? _cachedLedgerIndex; DateTime? _ledgerCachedAt;
 
