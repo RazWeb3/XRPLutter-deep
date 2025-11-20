@@ -44,7 +44,7 @@
 // 2025/11/17 13:10 追加: モード比較（Batch）デモ処理を実装。
 // 理由: 未定義ハンドラでビルドエラーが発生していたための解消と、各モード挙動の体験補完。
 // -------------------------------------------------------
-// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use, uri_does_not_exist, undefined_prefixed_name
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:xrplutter_sdk/xrplutter.dart';
