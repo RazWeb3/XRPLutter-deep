@@ -1,4 +1,12 @@
 name: CI
+# -------------------------------------------------------
+# 目的・役割: モノレポの解析/テストを自動実行するCI定義
+# 作成日: 2025/11/08
+#
+# 更新履歴:
+# 2025/11/20 変更: ルート一括解析を削除し、Nodeテンプレートは npm ci→npm install に変更、Node 20 を明示セットアップ
+# 理由: lockfile未同梱による npm ci 失敗の解消と解析安定化のため
+# -------------------------------------------------------
 
 on:
   push:
@@ -35,8 +43,13 @@ jobs:
           flutter pub get
           dart analyze .
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Test proxy template (node)
         working-directory: templates/byos_proxy_minimal_vercel
         run: |
-          npm ci
+          npm install --no-audit --no-fund
           npm test
