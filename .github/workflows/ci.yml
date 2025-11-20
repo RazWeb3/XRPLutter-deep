@@ -21,8 +21,7 @@ jobs:
       - name: Flutter version
         run: flutter --version
 
-      - name: Dart analyze (repo)
-        run: dart analyze .
+      # Root-level analyze is redundant in a monorepo; analyze packages/apps separately below
 
       - name: Test SDK package
         working-directory: packages/xrplutter_sdk
